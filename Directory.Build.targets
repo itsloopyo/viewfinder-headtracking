@@ -8,19 +8,6 @@
     <TargetFrameworks>net48</TargetFrameworks>
   </PropertyGroup>
 
-  <!-- IL2CPP interop DLLs in libs/ depend on Il2Cppmscorlib for base types.
-       CameraUnlock.Core.Unity doesn't know about IL2CPP, so inject it here. -->
-  <ItemGroup Condition="'$(MSBuildProjectName)' == 'CameraUnlock.Core.Unity'">
-    <Reference Include="Il2Cppmscorlib">
-      <HintPath>$(UnityEnginePath)\Il2Cppmscorlib.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Il2CppInterop.Runtime">
-      <HintPath>$(UnityEnginePath)\Il2CppInterop.Runtime.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-  </ItemGroup>
-
   <!-- Submodule files that use Mono-only Unity APIs incompatible with IL2CPP
        interop. This mod uses none of them. -->
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'CameraUnlock.Core.Unity'">

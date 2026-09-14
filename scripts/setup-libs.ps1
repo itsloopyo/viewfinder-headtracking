@@ -1,6 +1,7 @@
 #!/usr/bin/env pwsh
-# Populate src/ViewfinderHeadTracking/libs/ with the Unity / BepInEx / IL2CPP
-# DLLs that CameraUnlock.Core.Unity's HintPath references resolve to.
+# Populate src/ViewfinderHeadTracking/libs/ with the Unity reference DLLs that
+# CameraUnlock.Core.Unity's HintPath references resolve to. The plugin itself takes
+# BepInEx, HarmonyX and Il2CppInterop straight from its PackageReferences.
 #
 # Sources are REPO FILES ONLY - never a game install. A contributor who owns
 # Viewfinder and a CI runner that does not must compile against byte-identical
@@ -25,22 +26,6 @@ Get-ChildItem $libsPath -Filter '*.dll' -File | Remove-Item -Force
 $nugetRoot = (& dotnet nuget locals global-packages -l) -replace '^global-packages: ', ''
 if (-not (Test-Path $nugetRoot)) {
     throw "NuGet global-packages root not found: $nugetRoot. Run 'dotnet restore' first."
-}
-
-$packageDlls = @(
-    @{ Pkg = 'bepinex.unity.il2cpp/6.0.0-be.753';  Path = 'lib/net6.0/BepInEx.Unity.IL2CPP.dll' },
-    @{ Pkg = 'bepinex.core/6.0.0-be.753';          Path = 'lib/netstandard2.0/BepInEx.Core.dll' },
-    @{ Pkg = 'harmonyx/2.10.2';                    Path = 'lib/netstandard2.0/0Harmony.dll' },
-    @{ Pkg = 'il2cppinterop.runtime/1.5.0-ci.620'; Path = 'lib/net6.0/Il2CppInterop.Runtime.dll' },
-    @{ Pkg = 'il2cppinterop.referencelibs/1.0.0';  Path = 'lib/net6.0/Il2Cppmscorlib.dll' }
-)
-
-foreach ($entry in $packageDlls) {
-    $src = Join-Path $nugetRoot ("$($entry.Pkg)/$($entry.Path)")
-    if (-not (Test-Path $src)) {
-        throw "Missing NuGet asset: $src. Did 'dotnet restore' complete?"
-    }
-    Copy-Item $src $libsPath -Force
 }
 
 $unityModulesDir = Join-Path $nugetRoot 'unityengine.modules/2021.3.45/lib/netstandard2.0'
