@@ -1,0 +1,72 @@
+name: Build
+
+on:
+  # Markdown is NOT ignored: THIRD-PARTY-NOTICES.md is what the notices gate
+  # below reads, so a change that only edits it has to reach this workflow.
+  push:
+    branches: ['**']
+    paths-ignore:
+      - 'docs/**'
+      - 'LICENSE'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'LICENSE'
+
+jobs:
+  build:
+    name: Build and Validate
+    runs-on: windows-latest
+    # This job publishes nothing. Without an explicit read-only token it inherits
+    # the repository default, which on older repos can write contents and releases.
+    permissions:
+      contents: read
+    if: ${{ !startsWith(github.event.head_commit.message, 'Release v') }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          submodules: recursive
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
+        with:
+          # Pinned: the action otherwise downloads whatever pixi released last.
+          pixi-version: v0.70.1
+          # The workspace declares no conda dependencies, and the action's
+          # post-install 'pixi list' exits 1 on an empty environment.
+          run-install: false
+
+      - name: Build and package
+        shell: pwsh
+        run: pixi run package
+
+      - name: Run tests
+        shell: pwsh
+        run: pixi run test
+
+      - name: Verify installer was produced
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem release/*-installer.zip -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $zip) {
+            Write-Host "::error::No installer ZIP was produced by 'pixi run package'"
+            exit 1
+          }
+
+      # The package's own content gates, through the same pixi tasks a developer
+      # runs. The step above only proves a ZIP exists; these read what is in it.
+      - name: Validate package manifest
+        shell: pwsh
+        run: pixi run validate-manifest
+
+      - name: Validate third-party notices
+        shell: pwsh
+        run: pixi run validate-notices

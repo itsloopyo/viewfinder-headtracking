@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>ViewfinderHeadTracking</AssemblyName>
+    <RootNamespace>ViewfinderHeadTracking</RootNamespace>
+    <Version>0.0.0</Version>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <Authors>itsloopyo</Authors>
+    <Copyright>Copyright (c) 2026 itsloopyo</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>Head tracking mod for Viewfinder (Unity 2022.3 IL2CPP, URP) using CameraUnlock.Core</Description>
+    <!-- NU1702: CameraUnlock.Core.Unity targets .NET Framework but works fine with net6.0 -->
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\cameraunlock-core\csharp\src\CameraUnlock.Core\CameraUnlock.Core.csproj" />
+    <ProjectReference Include="..\..\cameraunlock-core\csharp\src\CameraUnlock.Core.Unity\CameraUnlock.Core.Unity.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.753" />
+    <PackageReference Include="UnityEngine.Modules" Version="2021.3.45" />
+    <PackageReference Include="Il2CppInterop.ReferenceLibs" Version="1.0.0" />
+  </ItemGroup>
+
+  <!-- Local test instrument, untracked: -p:Lab=true compiles the sources in .lab/lab-src
+       into the plugin as a second BepInEx plugin. Never part of a shipped build. -->
+  <PropertyGroup Condition="'$(Lab)' == 'true'">
+    <DefineConstants>$(DefineConstants);LAB</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Lab)' == 'true'">
+    <Compile Include="..\..\.lab\lab-src\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="libs\**" />
+    <None Remove="libs\**" />
+  </ItemGroup>
+</Project>

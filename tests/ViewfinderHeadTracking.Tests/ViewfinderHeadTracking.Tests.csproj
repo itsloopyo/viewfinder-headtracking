@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>ViewfinderHeadTracking.Tests</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\cameraunlock-core\csharp\src\CameraUnlock.Core\CameraUnlock.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The plugin is built against BepInEx and the IL2CPP interop layer, and neither
+       they nor UnityEngine's own assemblies load in a test host, so the files under
+       test are compiled in from source against UnityStubs.cs. Only files whose Unity
+       surface is plain maths belong here. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\ViewfinderHeadTracking\Camera\ZoomCompensation.cs" Link="UnderTest\ZoomCompensation.cs" />
+    <Compile Include="..\..\src\ViewfinderHeadTracking\Tracking\HeadPose.cs" Link="UnderTest\HeadPose.cs" />
+    <Compile Include="..\..\src\ViewfinderHeadTracking\Tracking\TrackerConnectionMonitor.cs" Link="UnderTest\TrackerConnectionMonitor.cs" />
+    <Compile Include="..\..\src\ViewfinderHeadTracking\Tracking\TrackingPipeline.cs" Link="UnderTest\TrackingPipeline.cs" />
+    <Compile Include="..\..\src\ViewfinderHeadTracking\Camera\AimScreenPoint.cs" Link="UnderTest\AimScreenPoint.cs" />
+    <Compile Include="..\..\src\ViewfinderHeadTracking\Camera\AimTrace.cs" Link="UnderTest\AimTrace.cs" />
+    <Compile Include="..\..\src\ViewfinderHeadTracking\Camera\TrackedView.cs" Link="UnderTest\TrackedView.cs" />
+  </ItemGroup>
+</Project>
