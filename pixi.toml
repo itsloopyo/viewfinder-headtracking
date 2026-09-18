@@ -6,6 +6,7 @@ channels = ["conda-forge"]
 platforms = ["win-64"]
 
 [tasks]
+update-submodule = "git submodule update --remote cameraunlock-core && powershell -NoProfile -ExecutionPolicy Bypass -File cameraunlock-core/scripts/update-submodule.ps1"
 sync = "git submodule update --remote cameraunlock-core"
 restore = "dotnet restore src/ViewfinderHeadTracking/ViewfinderHeadTracking.csproj"
 # setup-libs copies the build references out of the NuGet cache restore fills,
