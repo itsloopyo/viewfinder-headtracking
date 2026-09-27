@@ -28,6 +28,7 @@
 - Comments, and keys the mod never read, are not carried over. Nor are these, where your old file had them:
   - `ShowReticle=false`. The game's reticle now always follows the aim.
   - A hotkey set to Ctrl, Shift or Alt on its own. That key goes down before the key of any chord made with it, so the hotkey is left unbound, and it keeps its Ctrl+Shift chord.
+  - A hotkey set to a number that is not a key code Unity names. The hotkey is left unbound, the log says so, and it keeps its Ctrl+Shift chord.
 - An older version of the mod reads `com.cameraunlock.viewfinder.headtracking.cfg` and never reads `CameraUnlock.ini`, so a setting you change after updating is not in `com.cameraunlock.viewfinder.headtracking.cfg`.
 - Deleting only `CameraUnlock.ini` makes the next start read `com.cameraunlock.viewfinder.headtracking.cfg` again. To go back to the defaults, replace everything in `CameraUnlock.ini` with the defaults the README shows. Every setting they set to `default` then follows `Defaults.ini`.
 - Hotkeys are written as key names, and each hotkey lists every key that triggers it, the Ctrl+Shift chord included: `ToggleKey=End, Ctrl+Shift+Y`.
