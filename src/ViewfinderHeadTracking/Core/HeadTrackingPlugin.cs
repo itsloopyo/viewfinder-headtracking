@@ -1,19 +1,22 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 itsloopyo
 
+using System;
 using System.Collections.Generic;
+using System.IO;
 using BepInEx;
 using BepInEx.Logging;
 using BepInEx.Unity.IL2CPP;
+using CameraUnlock.Core.Config;
 using CameraUnlock.Core.Data;
 using CameraUnlock.Core.Processing;
 using CameraUnlock.Core.Protocol;
 using Il2CppInterop.Runtime.Injection;
 using UnityEngine;
 using ViewfinderHeadTracking.Configuration;
-using ViewfinderHeadTracking.Legacy;
 using ViewfinderHeadTracking.Tracking;
 using ViewfinderHeadTracking.Utilities;
+using Object = UnityEngine.Object;
 
 namespace ViewfinderHeadTracking.Core;
 
@@ -35,15 +38,13 @@ public class HeadTrackingPlugin : BasePlugin
     private static HeadTrackingBehaviour? _behaviour;
 
     private OpenTrackReceiver? _receiver;
+    private ConfigOwner<ViewfinderConfig>? _configOwner;
 
     public override void Load()
     {
         Logger = Log;
 
-        // The frozen reader reads the .cfg and writes nothing, so the one save every published
-        // build's Initialize made after binding is made here.
-        PluginConfig config = PluginConfig.From(LegacyConfigReader.Read(Config, out _));
-        Config.Save();
+        ViewfinderConfig config = LoadConfig();
 
         // Every game type is checked before anything is hooked. A build that has
         // renamed one of them gets an untouched game and a log line naming what moved,
@@ -65,7 +66,7 @@ public class HeadTrackingPlugin : BasePlugin
         _hostObject.hideFlags = HideFlags.DontSave;
         Object.DontDestroyOnLoad(_hostObject);
         _behaviour = _hostObject.AddComponent<HeadTrackingBehaviour>();
-        _behaviour.Initialize(_receiver, pipeline, config);
+        _behaviour.Initialize(_receiver, pipeline, config, SaveConfig);
 
         _receiver.Log = msg => Logger.LogInfo(msg);
         int port = config.UdpPort;
@@ -75,7 +76,65 @@ public class HeadTrackingPlugin : BasePlugin
         }
 
         Logger.LogInfo($"{PluginName} v{PluginVersion} loaded - tracking is " +
-                       $"{(config.EnabledOnStartup ? "ENABLED" : "DISABLED")} on startup");
+                       $"{(config.EnableOnStartup ? "ENABLED" : "DISABLED")} on startup");
+    }
+
+    /// <summary>
+    /// The settings live in BepInEx\config\CameraUnlock.ini, read and written by core's config
+    /// owner, with rows set to default following the player's Defaults.ini. Nothing is bound on
+    /// the plugin's Config, so ConfigurationManager does not list them. While CameraUnlock.ini is
+    /// absent the owner imports the plugin's .cfg, the file every earlier build read, through the
+    /// frozen reader on a ConfigFile of its own, and never writes that file.
+    ///
+    /// The mod has nothing on screen to show a message with, so the owner's messages for the
+    /// player go to the log beside its other lines.
+    /// </summary>
+    private ViewfinderConfig LoadConfig()
+    {
+        ConfigOwnerOptions<ViewfinderConfig> options =
+            ViewfinderConfig.Options(ConfigPath, Config.ConfigFilePath, DefaultsFile.PerUser());
+        options.StatusSink = message => Logger.LogWarning(message);
+        _configOwner = new ConfigOwner<ViewfinderConfig>(options);
+
+        ConfigLoadResult<ViewfinderConfig> loaded = _configOwner.Load();
+
+        // The owner writes each diagnostic as "<path>: <description>" among lines that only
+        // report what it did, so the complaints are picked out by their text.
+        var complaints = new HashSet<string>();
+        foreach (CanonicalDiagnostic diagnostic in loaded.Diagnostics)
+        {
+            complaints.Add(ConfigPath + ": " + diagnostic.Describe());
+        }
+        bool usable = loaded.Status == ConfigLoadStatus.Canonical
+                      || loaded.Status == ConfigLoadStatus.Migrated
+                      || loaded.Status == ConfigLoadStatus.Created;
+        foreach (string line in loaded.Log)
+        {
+            if (usable && !complaints.Contains(line)) Logger.LogInfo(line);
+            else Logger.LogWarning(line);
+        }
+        Logger.LogInfo($"Config {ConfigPath}: {loaded.Status}");
+        return loaded.Config;
+    }
+
+    private static string ConfigPath => Path.Combine(Paths.ConfigPath, "CameraUnlock.ini");
+
+    /// <summary>
+    /// Called after the new value is already applied. A save that fails is logged and the
+    /// session keeps the new value.
+    /// </summary>
+    private void SaveConfig(Action<ViewfinderConfig> change)
+    {
+        ConfigSaveResult saved = _configOwner!.Save(change);
+        if (saved.Status == ConfigSaveStatus.Saved)
+        {
+            // A row that held default and now holds a value, so it stops following
+            // Defaults.ini in this game.
+            foreach (string line in saved.Log) Logger.LogInfo(line);
+            return;
+        }
+        foreach (string line in saved.Log) Logger.LogWarning(line);
+        Logger.LogWarning($"{ConfigPath}: {saved.Status}: {saved.Reason} The change applies to this session only.");
     }
 
     /// <summary>
@@ -83,7 +142,7 @@ public class HeadTrackingPlugin : BasePlugin
     /// inversion, because the tracker owns pose shaping and the axis signs are applied
     /// at the engine boundary in <see cref="HeadPose"/>.
     /// </summary>
-    private static TrackingPipeline CreatePipeline(OpenTrackReceiver receiver, PluginConfig config)
+    private static TrackingPipeline CreatePipeline(OpenTrackReceiver receiver, ViewfinderConfig config)
     {
         return new TrackingPipeline(
             receiver,
@@ -99,11 +158,11 @@ public class HeadTrackingPlugin : BasePlugin
             {
                 Settings = new PositionSettings(
                     1f, 1f, 1f,
-                    config.PositionLimitX,
-                    config.PositionLimitY,
-                    config.PositionLimitYDown,
-                    config.PositionLimitZ,
-                    config.PositionLimitZBack,
+                    config.Position.LimitX,
+                    config.Position.LimitY,
+                    config.Position.LimitYDown,
+                    config.Position.LimitZ,
+                    config.Position.LimitZBack,
                     localSmoothing: config.LocalSmoothing,
                     remoteSmoothing: config.RemoteSmoothing,
                     invertX: false, invertY: false, invertZ: false)

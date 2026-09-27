@@ -81,6 +81,12 @@ try {
 if ($Version -notmatch '^\d+\.\d+\.\d+$') { Fail "Resolved version '$Version' is not a bare X.Y.Z semver" }
 $tagName = "v$Version"
 
+try {
+    Assert-ReleaseNotBelowCanonicalSince -RepoRoot $projectDir -Version $Version
+} catch {
+    Fail $_.Exception.Message
+}
+
 # Step 2: preconditions. These are the whole safety net; there is no prompt.
 Push-Location $projectDir
 try {

@@ -40,8 +40,9 @@ jobs:
         with:
           # Pinned: the action otherwise downloads whatever pixi released last.
           pixi-version: v0.70.1
-          # The workspace declares no conda dependencies, and the action's
-          # post-install 'pixi list' exits 1 on an empty environment.
+          # The action installs nothing itself: 'pixi run' below installs the
+          # locked environment (nodejs, for the config lint and the manifest
+          # gate) before it runs a task.
           run-install: false
 
       - name: Build and package

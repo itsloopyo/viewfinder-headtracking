@@ -6,7 +6,7 @@
 - Initial release.
 - Added head tracking for Viewfinder: yaw, pitch and roll, plus positional lean, peek and duck, driven by any OpenTrack compatible tracker on UDP port 4242.
 - Added decoupled look and aim: head tracking moves the view while the mouse or controller keeps aiming.
-- Moved the game's own reticle onto the point you are really aiming at while head tracking is active.
+- Moved the game's own reticle onto the point you are really aiming at while head tracking is active. No setting turns this off.
 - Added a head tracking on/off toggle on `End` or `Ctrl+Shift+Y`.
 - Added a three-position tracking mode cycle (full, rotation only, position only) on `Page Up` or `Ctrl+Shift+G`.
 - Added horizon-locked and view-local yaw modes on `Page Down` or `Ctrl+Shift+H`.
@@ -15,3 +15,27 @@
 - Added window centring, so the game window is centred on its monitor when Viewfinder runs windowed.
 - Added separate `LocalSmoothing` and `RemoteSmoothing` settings for trackers on this machine and on other devices.
 - Paused head tracking in menus, cutscenes and popups, and while the game window is not focused.
+- A setting set to `default` in `CameraUnlock.ini` takes its value from `Defaults.ini`, which every head tracking mod that keeps its settings in `CameraUnlock.ini` reads. Head tracking mods that keep their settings in another file do not read it, and neither do earlier versions of this mod. Writing a value in place of `default` changes that setting for this game only. When the mod saves a setting that a hotkey changed in game, it writes the new value in place of `default`, so that setting no longer follows `Defaults.ini` in this game until you set it to `default` again.
+- `Defaults.ini` is `%AppData%\CameraUnlock\Defaults.ini` on Windows; `$XDG_CONFIG_HOME/CameraUnlock/Defaults.ini` on Linux, or `~/.config/CameraUnlock/Defaults.ini` where `XDG_CONFIG_HOME` is not set, under Wine and Proton too; and `~/Library/Application Support/CameraUnlock/Defaults.ini` on macOS. The mod's log, where it writes one, names the file it read.
+- When the mod starts and finds no `Defaults.ini`, it creates one holding the built-in values, unless Windows runs the game as a packaged app, or the game runs on Linux or macOS without Wine or Proton. The mod never changes `Defaults.ini` after that.
+
+### Changed
+
+- Settings move to `BepInEx\config\CameraUnlock.ini`. Earlier versions of the mod kept these settings in `com.cameraunlock.viewfinder.headtracking.cfg`, in the same folder. The first time this version starts and finds no `CameraUnlock.ini`, it reads your settings from `com.cameraunlock.viewfinder.headtracking.cfg` and writes them into `CameraUnlock.ini`. It never changes `com.cameraunlock.viewfinder.headtracking.cfg`, and does not read it again while `CameraUnlock.ini` exists.
+- BepInEx's ConfigurationManager no longer lists these settings. Edit `BepInEx\config\CameraUnlock.ini` with any text editor.
+- A setting that the defaults the README shows set to `default` is written as `default` when you never changed it from the default earlier versions used, because `com.cameraunlock.viewfinder.headtracking.cfg` does not hold it or holds that default. It then follows `Defaults.ini`, so it takes the value `Defaults.ini` gives it, or the built-in value where `Defaults.ini` gives none, which can differ from the default earlier versions used. A setting you changed is written with the value imported for it, or as `default` where that value equals its default at that start.
+- `RotationEnabled` and `PositionEnabled` are one setting here, the tracking mode, so both are written as `default` or neither is.
+- Comments, and keys the mod never read, are not carried over. Nor are these, where your old file had them:
+  - `ShowReticle=false`. The game's reticle now always follows the aim.
+  - A hotkey set to Ctrl, Shift or Alt on its own. That key goes down before the key of any chord made with it, so the hotkey is left unbound, and it keeps its Ctrl+Shift chord.
+- An older version of the mod reads `com.cameraunlock.viewfinder.headtracking.cfg` and never reads `CameraUnlock.ini`, so a setting you change after updating is not in `com.cameraunlock.viewfinder.headtracking.cfg`.
+- Deleting only `CameraUnlock.ini` makes the next start read `com.cameraunlock.viewfinder.headtracking.cfg` again. To go back to the defaults, replace everything in `CameraUnlock.ini` with the defaults the README shows. Every setting they set to `default` then follows `Defaults.ini`.
+- Hotkeys are written as key names, and each hotkey lists every key that triggers it, the Ctrl+Shift chord included: `ToggleKey=End, Ctrl+Shift+Y`.
+- A hotkey bound to a plain key no longer fires while Ctrl and Shift are both held, so Ctrl+Shift with that key reaches only a binding that names the chord.
+- On Linux and macOS without Wine or Proton, this version reads its settings and saves none: it creates no `CameraUnlock.ini`, reads your settings from `com.cameraunlock.viewfinder.headtracking.cfg` again at every start while there is no `CameraUnlock.ini`, and a change made in game lasts until the game closes.
+- The tracking mode (`Page Up`) and the yaw mode (`Page Down`) you pick are saved to `CameraUnlock.ini` and are what the next start begins with. Earlier versions started every session from the file's settings. `End` still changes the current session only.
+- Several settings have new names or places in `CameraUnlock.ini`: `EnabledOnStartup` is `EnableOnStartup`; `[Position] PositionEnabled`, with the new `RotationEnabled`, sets the tracking mode at startup; `LimitX`, `LimitY`, `LimitYDown`, `LimitZ` and `LimitZBack` are `PositionLimitX` and so on; the `[Collision]` keys are under `[Position]`, with `CollisionRadius` now `CollisionMargin`; and `DiagnosticLogging` is under `[Diagnostics]`. The import carries each value to its new place.
+
+### Removed
+
+- `ShowReticle`. The game's reticle always follows the aim while head tracking moves the view; an imported `ShowReticle=false` is dropped and logged.

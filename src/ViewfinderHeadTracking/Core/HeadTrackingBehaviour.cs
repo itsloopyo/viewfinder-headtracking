@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using CameraUnlock.Core.Ads;
 using CameraUnlock.Core.Protocol;
+using CameraUnlock.Core.Tracking;
 using UnityEngine;
 using UnityEngine.Rendering;
 using ViewfinderHeadTracking.Camera;
@@ -78,11 +79,12 @@ public class HeadTrackingBehaviour : MonoBehaviour
     private Action _placeWindow = null!;
     private Action _computeFrame = null!;
     private Action _applyToRenderingCamera = null!;
+    private Action<Action<ViewfinderConfig>> _saveConfig = null!;
     private UnityEngine.Camera? _renderingCamera;
 
     private bool _trackingEnabled;
     private bool _worldSpaceYaw;
-    private bool _showReticle;
+    private TrackingMode _trackingMode;
     private bool _pauseOnLostFocus;
     private bool _collisionEnabled;
 
@@ -100,7 +102,8 @@ public class HeadTrackingBehaviour : MonoBehaviour
     private Vector3 _lastCleanPosition;
     private bool _hasLastCleanPosition;
 
-    internal void Initialize(OpenTrackReceiver receiver, TrackingPipeline pipeline, PluginConfig config)
+    internal void Initialize(OpenTrackReceiver receiver, TrackingPipeline pipeline, ViewfinderConfig config,
+        Action<Action<ViewfinderConfig>> saveConfig)
     {
         _pollGame = PollGame;
         _placeWindow = _windowPlacement.Update;
@@ -109,15 +112,16 @@ public class HeadTrackingBehaviour : MonoBehaviour
 
         _receiver = receiver;
         _pipeline = pipeline;
+        _saveConfig = saveConfig;
 
-        _trackingEnabled = config.EnabledOnStartup;
+        _trackingEnabled = config.EnableOnStartup;
         _worldSpaceYaw = config.WorldSpaceYaw;
-        _showReticle = config.ShowReticle;
+        // The table reads a pair that names no mode as its default, so the pair always names one.
+        SetTrackingMode(TrackingModeChannels.Decode(config.RotationEnabled, config.PositionEnabled)!.Value);
         _pauseOnLostFocus = config.PauseOnLostFocus;
         _collisionEnabled = config.CollisionEnabled;
-        _pipeline.PositionEnabled = config.PositionEnabled;
 
-        _leanClamp = new LeanClamp(config.CollisionRadius, config.CollisionReleaseSmoothing);
+        _leanClamp = new LeanClamp(config.CollisionMargin, config.CollisionReleaseSmoothing);
         _hotkeys = new HotkeyHandler(config, this);
         _hotkeys.LogBindings();
 
@@ -266,19 +270,13 @@ public class HeadTrackingBehaviour : MonoBehaviour
 
         float aimDistance = -1f;
         RaycastHit aimHit = default;
-        Vector2 offset = Vector2.zero;
-        if (_showReticle)
-        {
-            Vector2 centre = new(_view.PixelWidth * 0.5f, _view.PixelHeight * 0.5f);
-            Vector2 screenPoint = AimScreenPoint.Locate(_view, cleanPosition, cleanRotation * Vector3.forward,
-                _rig.InteractionMask, out aimDistance, out aimHit);
-            _reticle.MoveTo(screenPoint, centre);
-            offset = screenPoint - centre;
-        }
-        else
-        {
-            _reticle.Restore();
-        }
+        // The game's reticle always follows the aim while head tracking moves the view; no
+        // setting turns that off.
+        Vector2 centre = new(_view.PixelWidth * 0.5f, _view.PixelHeight * 0.5f);
+        Vector2 screenPoint = AimScreenPoint.Locate(_view, cleanPosition, cleanRotation * Vector3.forward,
+            _rig.InteractionMask, out aimDistance, out aimHit);
+        _reticle.MoveTo(screenPoint, centre);
+        Vector2 offset = screenPoint - centre;
 
         RigProbe.Sample(_view, applied, _aimScale, _fieldOfView.Factor, aimDistance, aimHit, offset,
             _reticle.Moved, wantedLean, _leanClamp, _collisionEnabled);
@@ -345,29 +343,20 @@ public class HeadTrackingBehaviour : MonoBehaviour
         _reticle.Restore();
     }
 
+    /// <summary>Turns head tracking on and off for this session only; it never writes the file.</summary>
     internal void ToggleTracking()
     {
         _trackingEnabled = !_trackingEnabled;
         HeadTrackingPlugin.Logger.LogInfo($"Head tracking {(_trackingEnabled ? "ENABLED" : "DISABLED")}");
     }
 
-    /// <summary>Rotation and position, then rotation only, then position only, then back.</summary>
+    /// <summary>
+    /// Rotation and position, then rotation only, then position only, then back. The new mode
+    /// is saved, so the next start begins with it.
+    /// </summary>
     internal void CycleTrackingMode()
     {
-        if (_pipeline.RotationEnabled && _pipeline.PositionEnabled)
-        {
-            _pipeline.PositionEnabled = false;
-        }
-        else if (_pipeline.RotationEnabled)
-        {
-            _pipeline.RotationEnabled = false;
-            _pipeline.PositionEnabled = true;
-        }
-        else
-        {
-            _pipeline.RotationEnabled = true;
-            _pipeline.PositionEnabled = true;
-        }
+        SetTrackingMode((TrackingMode)(((int)_trackingMode + 1) % 3));
 
         if (!_pipeline.PositionEnabled)
         {
@@ -378,12 +367,32 @@ public class HeadTrackingBehaviour : MonoBehaviour
         HeadTrackingPlugin.Logger.LogInfo(
             $"Tracking mode: rotation={(_pipeline.RotationEnabled ? "on" : "off")}, " +
             $"position={(_pipeline.PositionEnabled ? "on" : "off")}");
+
+        bool rotation = _pipeline.RotationEnabled;
+        bool position = _pipeline.PositionEnabled;
+        _saveConfig(c =>
+        {
+            c.RotationEnabled = rotation;
+            c.PositionEnabled = position;
+        });
     }
 
+    private void SetTrackingMode(TrackingMode mode)
+    {
+        _trackingMode = mode;
+        TrackingModeChannels.Encode(mode, out bool rotation, out bool position);
+        _pipeline.RotationEnabled = rotation;
+        _pipeline.PositionEnabled = position;
+    }
+
+    /// <summary>Switches the yaw mode and saves it, so the next start begins with it.</summary>
     internal void ToggleYawMode()
     {
-        _worldSpaceYaw = !_worldSpaceYaw;
-        HeadTrackingPlugin.Logger.LogInfo($"Yaw mode: {(_worldSpaceYaw ? "horizon-locked" : "view-local")}");
+        bool worldSpaceYaw = !_worldSpaceYaw;
+        _worldSpaceYaw = worldSpaceYaw;
+        HeadTrackingPlugin.Logger.LogInfo($"Yaw mode: {(worldSpaceYaw ? "horizon-locked" : "view-local")}");
+
+        _saveConfig(c => c.WorldSpaceYaw = worldSpaceYaw);
     }
 
     private void OnDestroy()
