@@ -45,13 +45,10 @@ jobs:
           # gate) before it runs a task.
           run-install: false
 
-      - name: Build and package
+      # package depends on test, so this step runs the whole test suite first.
+      - name: Test, build and package
         shell: pwsh
         run: pixi run package
-
-      - name: Run tests
-        shell: pwsh
-        run: pixi run test
 
       - name: Verify installer was produced
         shell: pwsh
