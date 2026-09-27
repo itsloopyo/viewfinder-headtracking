@@ -1,0 +1,26 @@
+# What the differential test compares, and where each file came from.
+# Columns: role, source (commit:path, a release asset, or the path in this repo), sha256 of the bytes.
+# The one published build is the rolling dev pre-release, 0.0.0-nightly.20260915.3a5666b, built
+# from 3a5666b. There is no v* release and no predecessor repo. Configuration/PluginConfig.cs, the
+# reader that build read the .cfg with, is the same file at 3a5666b and at 686aa7a, the commit the
+# reader in src/ViewfinderHeadTracking/Legacy was frozen from, restructured to fill LegacyConfig and
+# write nothing. It uses no core code. The oracle is that file byte for byte.
+published reader	3a5666b:src/ViewfinderHeadTracking/Configuration/PluginConfig.cs	0221141c7e9ed12e3abb7f6a9722b0106de1d5330b3f9430b37f3a4d0fa063ef
+frozen from	686aa7a:src/ViewfinderHeadTracking/Configuration/PluginConfig.cs	0221141c7e9ed12e3abb7f6a9722b0106de1d5330b3f9430b37f3a4d0fa063ef
+oracle copy	tests/config_differential/oracle/PluginConfig.cs	0221141c7e9ed12e3abb7f6a9722b0106de1d5330b3f9430b37f3a4d0fa063ef
+frozen reader	src/ViewfinderHeadTracking/Legacy/LegacyConfig.cs	ae2d8676ed17947595538e131828fc233168bbd408621e6a0b6646ea837ffd3b
+frozen reader	src/ViewfinderHeadTracking/Legacy/LegacyConfigReader.cs	fd5608ba033d53c0bdfebfabc7f26c206348b547fa007b58970b124263c2e0f9
+frozen reader	src/ViewfinderHeadTracking/Legacy/LegacyConfigKeys.cs	e3e95090ae5d77b33c1e767fea5ebeb022141e019287808594414d0b19de639b
+BepInEx 6	vendor/bepinex/BepInEx_UnityIL2CPP_x64.zip	2a7cbf74d26abe4765c3e662db1721b923bac39849ebfef2ca5dc7de7e2d9b7f
+# BepInEx 6.0.0-be.785. The test ran its BepInEx/core/BepInEx.Core.dll
+# (sha256 352aacc2d5356489a00891f76db28b6463c81d25bcb02f90035171a669b7e35b), which the game loads.
+# No published build shipped the plugin .cfg, in its ZIP or as a launcher-manifest.json seed (the dev
+# installer ZIP, sha256 54b40aa757741d0c753d03cc99413890fa4306baf64de29473a689a9775b85fb, was listed to check),
+# so the input is what the build writes at its first start: the .cfg the oracle, the published
+# PluginConfig.cs byte for byte, writes when its Initialize runs on a ConfigFile at a path with no file
+# and the plugin's BepInPlugin metadata (GUID, name and version 0.0.0), as BasePlugin builds it. It ran
+# on .NET 8 with that BepInEx.Core.dll and the UnityEngine.CoreModule of the UnityEngine.Modules 2021.3.45
+# package the plugin is built against. The "Acceptable values" comment lines list whichever KeyCode enum
+# the harness loaded; in game they list the one the game's interop assemblies hold. No reader reads a
+# comment line.
+input	tests/config_differential/data/first-run/dev.cfg	5f7b186acd884da7abdfeb2dbb1d14c29c49292b383299fe57e548869b865e84

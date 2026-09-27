@@ -15,7 +15,7 @@ setup = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/setup-libs.ps1
 build = { cmd = "dotnet build src/ViewfinderHeadTracking/ViewfinderHeadTracking.csproj -c Release -m:1", depends-on = ["setup"] }
 install = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 Release", depends-on = ["build"] }
 uninstall = "scripts/uninstall.cmd"
-package = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["build"] }
+package = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["test"] }
 
 # The two content gates over a built package, run by the release script after
 # packaging. validate-manifest reads the newest ZIP in release/ and checks every
@@ -28,8 +28,10 @@ validate-notices = "node cameraunlock-core/scripts/validate-notices.mjs"
 clean = "dotnet clean src/ViewfinderHeadTracking/ViewfinderHeadTracking.csproj"
 
 # Characterization tests over the plugin's pure maths, compiled from source against
-# a UnityEngine stub. Game-independent, like build.
-test = "dotnet test tests/ViewfinderHeadTracking.Tests/ViewfinderHeadTracking.Tests.csproj"
+# a UnityEngine stub, then the config tests, among them the differential test in
+# tests/config_differential, which holds the legacy import to the published build's own
+# reader on its first-run file and on core's mutation corpus. Game-independent, like build.
+test = { cmd = "dotnet test tests/ViewfinderHeadTracking.Tests/ViewfinderHeadTracking.Tests.csproj -c Release && dotnet test tests/ViewfinderHeadTracking.ConfigTests/ViewfinderHeadTracking.ConfigTests.csproj -c Release", depends-on = ["build"] }
 
 # Bump the vendored mod-loader copy to the latest upstream build at least two weeks
 # old. Manual; commit the result. CI does not run this.

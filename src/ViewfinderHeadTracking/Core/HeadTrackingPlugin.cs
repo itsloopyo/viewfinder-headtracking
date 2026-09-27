@@ -11,6 +11,7 @@ using CameraUnlock.Core.Protocol;
 using Il2CppInterop.Runtime.Injection;
 using UnityEngine;
 using ViewfinderHeadTracking.Configuration;
+using ViewfinderHeadTracking.Legacy;
 using ViewfinderHeadTracking.Tracking;
 using ViewfinderHeadTracking.Utilities;
 
@@ -39,8 +40,10 @@ public class HeadTrackingPlugin : BasePlugin
     {
         Logger = Log;
 
-        var config = new PluginConfig();
-        config.Initialize(Config);
+        // The frozen reader reads the .cfg and writes nothing, so the one save every published
+        // build's Initialize made after binding is made here.
+        PluginConfig config = PluginConfig.From(LegacyConfigReader.Read(Config, out _));
+        Config.Save();
 
         // Every game type is checked before anything is hooked. A build that has
         // renamed one of them gets an untouched game and a log line naming what moved,
@@ -65,14 +68,14 @@ public class HeadTrackingPlugin : BasePlugin
         _behaviour.Initialize(_receiver, pipeline, config);
 
         _receiver.Log = msg => Logger.LogInfo(msg);
-        int port = config.UdpPort.Value;
+        int port = config.UdpPort;
         if (_receiver.Start(port))
         {
             Logger.LogInfo($"Listening for tracker data on UDP port {port}");
         }
 
         Logger.LogInfo($"{PluginName} v{PluginVersion} loaded - tracking is " +
-                       $"{(config.EnabledOnStartup.Value ? "ENABLED" : "DISABLED")} on startup");
+                       $"{(config.EnabledOnStartup ? "ENABLED" : "DISABLED")} on startup");
     }
 
     /// <summary>
@@ -86,8 +89,8 @@ public class HeadTrackingPlugin : BasePlugin
             receiver,
             new TrackingProcessor
             {
-                LocalSmoothing = config.LocalSmoothing.Value,
-                RemoteSmoothing = config.RemoteSmoothing.Value,
+                LocalSmoothing = config.LocalSmoothing,
+                RemoteSmoothing = config.RemoteSmoothing,
                 Sensitivity = SensitivitySettings.Default,
                 Deadzone = DeadzoneSettings.None
             },
@@ -96,13 +99,13 @@ public class HeadTrackingPlugin : BasePlugin
             {
                 Settings = new PositionSettings(
                     1f, 1f, 1f,
-                    config.PositionLimitX.Value,
-                    config.PositionLimitY.Value,
-                    config.PositionLimitYDown.Value,
-                    config.PositionLimitZ.Value,
-                    config.PositionLimitZBack.Value,
-                    localSmoothing: config.LocalSmoothing.Value,
-                    remoteSmoothing: config.RemoteSmoothing.Value,
+                    config.PositionLimitX,
+                    config.PositionLimitY,
+                    config.PositionLimitYDown,
+                    config.PositionLimitZ,
+                    config.PositionLimitZBack,
+                    localSmoothing: config.LocalSmoothing,
+                    remoteSmoothing: config.RemoteSmoothing,
                     invertX: false, invertY: false, invertZ: false)
             },
             new PositionInterpolator());

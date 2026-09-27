@@ -110,22 +110,22 @@ public class HeadTrackingBehaviour : MonoBehaviour
         _receiver = receiver;
         _pipeline = pipeline;
 
-        _trackingEnabled = config.EnabledOnStartup.Value;
-        _worldSpaceYaw = config.WorldSpaceYaw.Value;
-        _showReticle = config.ShowReticle.Value;
-        _pauseOnLostFocus = config.PauseOnLostFocus.Value;
-        _collisionEnabled = config.CollisionEnabled.Value;
-        _pipeline.PositionEnabled = config.PositionEnabled.Value;
+        _trackingEnabled = config.EnabledOnStartup;
+        _worldSpaceYaw = config.WorldSpaceYaw;
+        _showReticle = config.ShowReticle;
+        _pauseOnLostFocus = config.PauseOnLostFocus;
+        _collisionEnabled = config.CollisionEnabled;
+        _pipeline.PositionEnabled = config.PositionEnabled;
 
-        _leanClamp = new LeanClamp(config.CollisionRadius.Value, config.CollisionReleaseSmoothing.Value);
+        _leanClamp = new LeanClamp(config.CollisionRadius, config.CollisionReleaseSmoothing);
         _hotkeys = new HotkeyHandler(config, this);
         _hotkeys.LogBindings();
 
         _rig.ResolveMembers();
         _reticle.ResolveMembers();
-        _state = new GameplayState(_rig) { DiagnosticLogging = config.DiagnosticLogging.Value };
+        _state = new GameplayState(_rig) { DiagnosticLogging = config.DiagnosticLogging };
         _state.ResolveMembers();
-        RigProbe.Enabled = config.DiagnosticLogging.Value;
+        RigProbe.Enabled = config.DiagnosticLogging;
 
         _rig.OnRigChanged += OnRigChanged;
 

@@ -24,6 +24,7 @@ release/
 
 # Build-time reference assemblies, restored from NuGet by scripts/setup-libs.ps1
 src/*/libs/*.dll
+tests/*/libs/
 
 # Install state, written next to the game exe
 .headtracking-state.json
