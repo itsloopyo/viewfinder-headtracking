@@ -295,7 +295,7 @@ Run `uninstall.cmd`. This removes the mod DLLs, and removes BepInEx (including t
 
 ## Building from Source
 
-Prerequisites: [pixi](https://pixi.sh) and the .NET 8 SDK. No copy of the game is needed; every build reference comes from NuGet through `scripts/setup-libs.ps1`.
+Prerequisites: [pixi](https://pixi.sh) and the .NET 8 SDK. No copy of the game is needed. `scripts/setup-libs.ps1` takes the plugin's build references from NuGet, and takes `BepInEx.Core.dll` and `SemanticVersioning.dll` for the config tests from the vendored BepInEx archive in `vendor/bepinex/`.
 
 ```powershell
 git clone --recursive https://github.com/itsloopyo/viewfinder-headtracking.git
@@ -303,7 +303,7 @@ cd viewfinder-headtracking
 pixi run package
 ```
 
-`pixi run package` builds and produces the installer ZIP in `release/`. `pixi run test` runs the unit tests, and `pixi run install` deploys a Release build straight into your own game folder.
+`pixi run package` runs `pixi run test` first, then produces the installer ZIP in `release/`. `pixi run test` runs the unit tests, the config tests (including the differential test of the settings import from the old `.cfg`) and core's config lint over the committed `config/CameraUnlock.ini` and every file the import wrote, which is why the pixi environment carries Node.js. `pixi run install` deploys a Release build straight into your own game folder.
 
 ## Community & Support
 
