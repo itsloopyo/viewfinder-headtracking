@@ -105,6 +105,18 @@ try {
     Write-Host "New version:     $Version" -ForegroundColor Green
     Write-Host ""
 
+    Write-Host "Running the full test suite..." -ForegroundColor Cyan
+    Push-Location $projectDir
+    try {
+        pixi run test
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: pixi run test failed. Nothing was changed." -ForegroundColor Red
+            exit 1
+        }
+    } finally {
+        Pop-Location
+    }
+
     # THIRD-PARTY-NOTICES.md names the cameraunlock-core commit compiled into the
     # release ZIP, and a submodule bump does not touch it. The packager refuses a
     # mismatch, so re-sync it here and let this release carry the correction.

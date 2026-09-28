@@ -15,7 +15,7 @@ setup = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/setup-libs.ps1
 build = { cmd = "dotnet build src/ViewfinderHeadTracking/ViewfinderHeadTracking.csproj -c Release -m:1", depends-on = ["setup"] }
 install = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 Release", depends-on = ["build"] }
 uninstall = "scripts/uninstall.cmd"
-package = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["test"] }
+package = { cmd = "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1", depends-on = ["test-unit"] }
 
 # The two content gates over a built package, run by the release script after
 # packaging. validate-manifest reads the newest ZIP in release/ and checks every
@@ -32,7 +32,9 @@ clean = "dotnet clean src/ViewfinderHeadTracking/ViewfinderHeadTracking.csproj"
 # tests/config_differential, which holds the legacy import to the published build's own
 # reader on its first-run file and on core's mutation corpus, then core's canonical config
 # lint over the committed file and every file the test migrated. Game-independent, like build.
-test = { cmd = "dotnet test tests/ViewfinderHeadTracking.Tests/ViewfinderHeadTracking.Tests.csproj -c Release && dotnet test tests/ViewfinderHeadTracking.ConfigTests/ViewfinderHeadTracking.ConfigTests.csproj -c Release && node tests/config_differential/lint-migrated.mjs tests/ViewfinderHeadTracking.ConfigTests/bin/Release/net8.0/migrated", depends-on = ["build"] }
+test-unit = { cmd = "dotnet test tests/ViewfinderHeadTracking.Tests/ViewfinderHeadTracking.Tests.csproj -c Release && dotnet test tests/ViewfinderHeadTracking.ConfigTests/ViewfinderHeadTracking.ConfigTests.csproj -c Release --filter FullyQualifiedName!~Differential", depends-on = ["build"] }
+test-differential = { cmd = "dotnet test tests/ViewfinderHeadTracking.ConfigTests/ViewfinderHeadTracking.ConfigTests.csproj -c Release --filter FullyQualifiedName~Differential && node tests/config_differential/lint-migrated.mjs tests/ViewfinderHeadTracking.ConfigTests/bin/Release/net8.0/migrated", depends-on = ["build"] }
+test = { depends-on = ["test-unit", "test-differential"] }
 # Rewrites config/CameraUnlock.ini from the config table after a change to a row, a comment or a
 # default. The render test compares the two on every `pixi run test`, so the committed file cannot
 # drift from the code.
