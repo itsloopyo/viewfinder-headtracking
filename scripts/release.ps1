@@ -114,35 +114,17 @@ try {
     # Step 3: changelog. This is the gate that aborts when there are no
     # user-facing commits, so it runs before any version string is touched.
     Write-Host "Generating CHANGELOG..." -ForegroundColor Cyan
-    $changelog = [System.IO.File]::ReadAllText($changelogPath)
-    $date = Get-Date -Format 'yyyy-MM-dd'
-    $hasVersionTags = git tag -l 'v[0-9]*'
-    if (-not $hasVersionTags -and $changelog -match '(?m)^## \[0\.0\.0\][^\r\n]*') {
-        # First release: the unreleased [0.0.0] section is the hand-written notes
-        # for it, and dumping every commit since the first one would bury them.
-        $changelog = $changelog -replace '(?m)^## \[0\.0\.0\][^\r\n]*', "## [$Version] - $date"
-        Write-Utf8NoBom $changelogPath $changelog
-        Write-Host "  First release - retitled the [0.0.0] section to [$Version]" -ForegroundColor Gray
-    } else {
-        try {
-            New-ChangelogFromCommits -ChangelogPath $changelogPath -Version $Version -ArtifactPaths @(
-                "src/ViewfinderHeadTracking/",
-                "cameraunlock-core",
-                "scripts/install.cmd",
-                "scripts/uninstall.cmd"
-            ) | Out-Null
-        } catch {
-            if (-not $Force) {
-                Write-Host $_.Exception.Message -ForegroundColor Red
-                Fail "No user-facing changes to release. Re-run with -Force for a maintenance release."
-            }
-            Write-Host "No user-facing commits since the last tag - writing a maintenance entry (-Force)." -ForegroundColor Yellow
-            $entry = "## [$Version] - $date`n`n### Changed`n`n- Maintenance release (no user-facing changes).`n`n"
-            $changelog = [System.IO.File]::ReadAllText($changelogPath)
-            if ($changelog -notmatch '(?m)^## \[') { Fail "CHANGELOG.md has no version section to insert above" }
-            $changelog = ([regex]'(?m)^## \[').Replace($changelog, "$entry## [", 1)
-            Write-Utf8NoBom $changelogPath $changelog
-        }
+    try {
+        New-ChangelogFromCommits -ChangelogPath $changelogPath -Version $Version -Maintenance:$Force -ArtifactPaths @(
+            "src/ViewfinderHeadTracking/",
+            "cameraunlock-core",
+            "scripts/install.cmd",
+            "scripts/uninstall.cmd"
+        ) | Out-Null
+    } catch {
+        if ($Force) { throw }
+        Write-Host $_.Exception.Message -ForegroundColor Red
+        Fail "No user-facing changes to release. Re-run with -Force for a maintenance release."
     }
 
     # Step 4: version strings. The csproj is canonical; the rest are kept in step.
