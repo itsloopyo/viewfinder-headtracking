@@ -1,20 +1,9 @@
 # Changelog
 
-## [0.0.0] - 2026-09-14
+## [Unreleased]
 
 ### Added
-- Initial release.
-- Added head tracking for Viewfinder: yaw, pitch and roll, plus positional lean, peek and duck, driven by any OpenTrack compatible tracker on UDP port 4242.
-- Added decoupled look and aim: head tracking moves the view while the mouse or controller keeps aiming.
-- Moved the game's own reticle onto the point you are really aiming at while head tracking is active. No setting turns this off.
-- Added a head tracking on/off toggle on `End` or `Ctrl+Shift+Y`.
-- Added a three-position tracking mode cycle (full, rotation only, position only) on `Page Up` or `Ctrl+Shift+G`.
-- Added horizon-locked and view-local yaw modes on `Page Down` or `Ctrl+Shift+H`.
-- Added a lean clamp that sweeps the lean against the level, so leaning into a wall cannot put the view inside it.
-- Added field-of-view scaling, so head tracking moves the view by the same amount on screen whatever the game does with its field of view.
-- Added window centring, so the game window is centred on its monitor when Viewfinder runs windowed.
-- Added separate `LocalSmoothing` and `RemoteSmoothing` settings for trackers on this machine and on other devices.
-- Paused head tracking in menus, cutscenes and popups, and while the game window is not focused.
+
 - A setting set to `default` in `CameraUnlock.ini` takes its value from `Defaults.ini`, which every head tracking mod that keeps its settings in `CameraUnlock.ini` reads. Head tracking mods that keep their settings in another file do not read it, and neither do earlier versions of this mod. Writing a value in place of `default` changes that setting for this game only. When the mod saves a setting that a hotkey changed in game, it writes the new value in place of `default`, so that setting no longer follows `Defaults.ini` in this game until you set it to `default` again.
 - `Defaults.ini` is `%AppData%\CameraUnlock\Defaults.ini` on Windows; `$XDG_CONFIG_HOME/CameraUnlock/Defaults.ini` on Linux, or `~/.config/CameraUnlock/Defaults.ini` where `XDG_CONFIG_HOME` is not set, under Wine and Proton too; and `~/Library/Application Support/CameraUnlock/Defaults.ini` on macOS. The mod's log, where it writes one, names the file it read.
 - When the mod starts and finds no `Defaults.ini`, it creates one holding the built-in values, unless Windows runs the game as a packaged app, or the game runs on Linux or macOS without Wine or Proton. The mod never changes `Defaults.ini` after that.
@@ -40,3 +29,19 @@
 ### Removed
 
 - `ShowReticle`. The game's reticle always follows the aim while head tracking moves the view; an imported `ShowReticle=false` is dropped and logged.
+
+## [0.0.0] - 2026-09-14
+
+### Added
+- Initial release.
+- Added head tracking for Viewfinder: yaw, pitch and roll, plus positional lean, peek and duck, driven by any OpenTrack compatible tracker on UDP port 4242.
+- Added decoupled look and aim: head tracking moves the view while the mouse or controller keeps aiming.
+- Moved the game's own reticle onto the point you are really aiming at while head tracking is active.
+- Added a head tracking on/off toggle on `End` or `Ctrl+Shift+Y`.
+- Added a three-position tracking mode cycle (full, rotation only, position only) on `Page Up` or `Ctrl+Shift+G`.
+- Added horizon-locked and view-local yaw modes on `Page Down` or `Ctrl+Shift+H`.
+- Added a lean clamp that sweeps the lean against the level, so leaning into a wall cannot put the view inside it.
+- Added field-of-view scaling, so head tracking moves the view by the same amount on screen whatever the game does with its field of view.
+- Added window centring, so the game window is centred on its monitor when Viewfinder runs windowed.
+- Added separate `LocalSmoothing` and `RemoteSmoothing` settings for trackers on this machine and on other devices.
+- Paused head tracking in menus, cutscenes and popups, and while the game window is not focused.
